@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { fetchNotes, api } from "@/lib/api";
+import { fetchNotes } from "@/lib/api";
 import { NoteTag } from "@/types/note";
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
@@ -15,11 +15,8 @@ interface NotesClientProps {
 }
 
 export default function NotesClient({ tag }: NotesClientProps) {
-  const queryClient = useQueryClient();
-
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -43,14 +40,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
     placeholderData: (keepPreviousData) => keepPreviousData,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.delete(`/notes/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
+  const notesList = data?.notes || [];
 
   return (
     <div className={css.app}>
@@ -78,13 +68,12 @@ export default function NotesClient({ tag }: NotesClientProps) {
 
       {isLoading ? (
         <p style={{ textAlign: "center", padding: "40px" }}>Loading...</p>
+      ) : notesList.length > 0 ? (
+        <NoteList notes={notesList} />
       ) : (
-        data && (
-          <NoteList
-            notes={data.notes || []}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        )
+        <p style={{ textAlign: "center", padding: "40px", color: "#666" }}>
+          No notes found.
+        </p>
       )}
     </div>
   );
