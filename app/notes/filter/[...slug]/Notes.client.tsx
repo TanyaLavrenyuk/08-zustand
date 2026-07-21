@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchNotes, createNote, api } from "@/lib/api";
-import { NoteTag, Note } from "@/types/note";
+import Link from "next/link";
+import { fetchNotes, api } from "@/lib/api";
+import { NoteTag } from "@/types/note";
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
-import Modal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
 import css from "./NotesPage.module.css";
 
 interface NotesClientProps {
@@ -22,7 +21,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -43,14 +41,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
     queryKey: ["notes", { page, search: debouncedSearch, tag }],
     queryFn: () => fetchNotes({ page, search: debouncedSearch, tag }),
     placeholderData: (keepPreviousData) => keepPreviousData,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setIsModalOpen(false);
-    },
   });
 
   const deleteMutation = useMutation({
@@ -75,9 +65,9 @@ export default function NotesClient({ tag }: NotesClientProps) {
           />
         )}
 
-        <button onClick={() => setIsModalOpen(true)} className={css.button}>
+        <Link href="/notes/action/create" className={css.button}>
           + Create New Note
-        </button>
+        </Link>
       </div>
 
       {isError && (
@@ -95,18 +85,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
             onDelete={(id) => deleteMutation.mutate(id)}
           />
         )
-      )}
-
-      {isModalOpen && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onSubmit={(newNote) =>
-              createMutation.mutate(newNote as Omit<Note, "id" | "createdAt">)
-            }
-            onCancel={() => setIsModalOpen(false)}
-            isLoading={createMutation.isPending}
-          />
-        </Modal>
       )}
     </div>
   );
